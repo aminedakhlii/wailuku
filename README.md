@@ -37,7 +37,7 @@ void main() {
 
   // Define a simple GET route
   server.get('/', (req, res) {
-    res.send('Welcome to Wailuku!');
+     res.send('Welcome to Wailuku!');
   });
 
   // Define a POST route to handle JSON data submission
