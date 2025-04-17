@@ -1,94 +1,106 @@
 # Wailuku
 
-A minimalist backend framework for Dart, designed to provide a simple and intuitive way to build scalable server-side applications.
+A minimalist Dart backend framework inspired by Express.js.
+
+## Features
+
+- Simple and intuitive API similar to Express.js
+- Built-in routing system with parameter support
+- Request body parsing for JSON and form data
+- Query parameter handling
+- Route parameter extraction
+- Middleware support
+- Clean and maintainable codebase
 
 ## Getting Started
 
-To use the Wailuku framework, you'll need to have Dart installed on your machine. You can download Dart from the [official Dart SDK page](https://dart.dev/get-dart).
-
 ### Installation
 
-1. Create a new Dart project:
-   ```bash
-   mkdir my_project
-   cd my_project
-   dart create .
-   ```
-2. Add Wailuku to your pubspec.yaml file:
-   ```
-   dependencies:
-     wailuku:
-       git: https://github.com/aminedakhlii/wailuku.git
-   ```
-3. Run the following command to get the package:
-   ```
-   dart pub get
-   ```
-### Example Usage
+Add Wailuku to your `pubspec.yaml`:
 
-Here is a simple example to get you started with Wailuku:
-
+```yaml
+dependencies:
+  wailuku: ^0.1.0
 ```
-// Import the Wailuku package
+
+### Basic Usage
+
+```dart
 import 'package:wailuku/wailuku.dart';
 
-void main() {
+void main() async {
   var server = WailukuServer();
-
-  // Define a simple GET route
-  server.get('/', (req, res) {
-     res.send('Welcome to Wailuku!');
+  
+  // GET request
+  server.get('/', (Request req, Response res) {
+    res.send('Hello World!');
   });
 
-  // Define a POST route to handle JSON data submission
-  server.post('/submit', (req, res) {
-     var name = req.body['name'];
-     var age = req.body['age'];
-   
-     // Perform some operations with the data
-     if (name != null && age != null) {
-       // Send a response indicating success and echo the received data
-       res.status(200); // HTTP 200 OK
-       res.json({
-         'message': 'Data received successfully',
-         'yourData': {
-           'name': name,
-           'age': age
-         }
-       });
-     } else {
-       // Send an error response if required data is missing
-       res.status(400); // HTTP 400 Bad Request
-       res.send('Missing name or age in the request body');
-     }
-   });
+  // POST request with JSON body
+  server.post('/users', (Request req, Response res) {
+    var name = req.body['name'];
+    var age = req.body['age'];
+    
+    res.json({
+      'message': 'User created',
+      'data': {'name': name, 'age': age}
+    });
+  });
 
-  // Start the server
-  server.listen('localhost', 8080);
+  // Route with parameters
+  server.get('/users/:id', (Request req, Response res) {
+    var userId = req.getParam('id');
+    res.send('User ID: $userId');
+  });
+
+  // Query parameters
+  server.get('/search', (Request req, Response res) {
+    var query = req.getQuery('q');
+    res.send('Search query: $query');
+  });
+
+  await server.listen('localhost', 8080);
 }
 ```
 
-Run your application: 
+## API Reference
 
-```
-dart run yourProjectMainEntry.dart
-```
+### Request
 
-Visit http://localhost:8080 in your browser to see the server in action.
+The `Request` class provides access to:
+- Request body (`req.body`)
+- Query parameters (`req.query`)
+- Route parameters (`req.params`)
+- HTTP method (`req.method`)
 
-### Reasons to use Dart on the server
+### Response
 
-1. Robust Community and Support: Dart boasts a thriving community and extensive support through documentation and third-party packages.
-2. Excellent Package Manager: Dart's package manager, Pub, provides a vast array of libraries and tools, facilitating integration with databases, authentication services, and more.
-3. Firebase and ORM Integration: Dart's compatibility with Firebase and various ORM tools makes it an excellent choice for developing complex applications.
-4. Underutilized on the Server Side: While Dart is popular for client-side development, especially with Flutter, its potential on the server side remains largely untapped. Wailuku aims to bridge this gap, demonstrating Dart's capabilities beyond mobile and frontend development.
+The `Response` class provides methods for:
+- Sending text responses (`res.send()`)
+- Sending JSON responses (`res.json()`)
+- Setting status codes (`res.status()`)
+- Managing response headers
 
-### License 
+### Routing
 
-Wailuku is BSD 3-clause licensed
+Routes can be registered using:
+- `server.get(path, handler)`
+- `server.post(path, handler)`
+- `server.put(path, handler)`
+- `server.delete(path, handler)`
 
-### Contributions
+Path patterns can include parameters:
+- `/users/:id` - Matches `/users/123`
+- `/posts/:postId/comments/:commentId` - Matches `/posts/123/comments/456`
 
-Contributions are welcome! Please fork the repository and submit pull requests, or file issues with any suggestions, bugs, or enhancements.
+## Example
 
-Thank you for considering Wailuku for your next server-side project in Dart!
+Check out the [example](example/example_usage.dart) for a complete CRUD API implementation.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

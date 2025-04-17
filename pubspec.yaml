@@ -6,11 +6,10 @@ homepage: https://github.com/aminedakhlii/wailuku
 environment:
   sdk: '>=2.12.0 <3.7.0' # Adjust the version based on your compatibility requirements
 
-#dependencies: 
+dependencies:
 
 dev_dependencies:
   test: ^1.16.0 
-  dart_dev_tools: ^0.1.0
 
 executables:
   wailuku: bin/main.dart

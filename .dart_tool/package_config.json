@@ -284,7 +284,10 @@
       "languageVersion": "2.12"
     }
   ],
-  "generated": "2024-05-08T15:06:45.376948Z",
+  "generated": "2025-04-17T23:11:50.335234Z",
   "generator": "pub",
-  "generatorVersion": "3.2.0"
+  "generatorVersion": "3.6.1",
+  "flutterRoot": "file:///Users/aminedakhli/Downloads/flutter",
+  "flutterVersion": "3.27.3",
+  "pubCache": "file:///Users/aminedakhli/.pub-cache"
 }

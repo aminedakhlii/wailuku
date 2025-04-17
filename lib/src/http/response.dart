@@ -20,27 +20,30 @@ class Response {
   /// Sets the HTTP status code for the response.
   ///
   /// [statusCode] The HTTP status code to set (e.g., 200, 404, 500)
+  /// Returns this Response instance for method chaining
   ///
   /// Example:
   /// ```dart
-  /// res.status(200); // OK
-  /// res.status(404); // Not Found
+  /// res.status(200).send('OK');
   /// ```
-  void status(int statusCode) {
+  Response status(int statusCode) {
     _response.statusCode = statusCode;
+    return this;
   }
 
   /// Sends a text response and closes the connection.
   ///
   /// [message] The text message to send in the response body
+  /// Returns this Response instance for method chaining
   ///
   /// Example:
   /// ```dart
   /// res.send('Hello, World!');
   /// ```
-  void send(String message) {
+  Response send(String message) {
     _response.write(message);
     close();
+    return this;
   }
 
   /// Sends a JSON response and closes the connection.
@@ -52,6 +55,7 @@ class Response {
   /// 4. Closes the connection
   ///
   /// [jsonData] The data to send as JSON
+  /// Returns this Response instance for method chaining
   ///
   /// Example:
   /// ```dart
@@ -60,16 +64,18 @@ class Response {
   ///   'age': 30
   /// });
   /// ```
-  void json(Map<String, dynamic> jsonData) {
+  Response json(Map<String, dynamic> jsonData) {
     _response.headers.contentType = ContentType.json;
     _response.write(jsonEncode(jsonData));
     close();
+    return this;
   }
 
   /// Closes the HTTP response connection.
   ///
   /// This method should be called after sending the response to ensure
   /// the connection is properly closed.
+  /// Returns this Response instance for method chaining
   void close() {
     _response.close();
   }

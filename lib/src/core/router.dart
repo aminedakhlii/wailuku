@@ -35,7 +35,7 @@ class Router {
   /// Example:
   /// ```dart
   /// router.register('GET', '/users/:id', (req, res) {
-  ///   // Handle the request
+  ///   res.send('User ${req.params['id']}');
   /// });
   /// ```
   void register(String method, String path, Function handler) {
@@ -54,27 +54,67 @@ class Router {
   ///
   /// [httpRequest] The incoming HTTP request to route
   void route(HttpRequest httpRequest) {
+    // Parse the query string manually if needed
+    var queryParams = <String, String>{};
+    if (httpRequest.uri.query.isNotEmpty) {
+      queryParams = Uri.splitQueryString(httpRequest.uri.query);
+    }
+
     var methodRoutes = _routes[httpRequest.method];
-    var matchedEntry = methodRoutes?.entries.firstWhere(
-      (entry) => entry.key.hasMatch(httpRequest.uri.path),
-      orElse: () => null
+    if (methodRoutes == null) {
+      Response response = Response(httpRequest.response);
+      ResponseUtils.sendError(response, "Method Not Allowed", statusCode: HttpStatus.methodNotAllowed);
+      return;
+    }
+
+    // Get the path without query parameters
+    var path = httpRequest.uri.path;
+    if (path.isEmpty) path = '/';
+
+    var matchedEntry = methodRoutes.entries.firstWhere(
+      (entry) => entry.key.hasMatch(path),
+      orElse: () => MapEntry(RegExp(''), (_, __) {})
     );
 
-    if (matchedEntry != null) {
+    if (matchedEntry.key.pattern.isNotEmpty) {
       var handler = matchedEntry.value;
-      var params = _extractParams(matchedEntry.key, httpRequest.uri.path);
+      var params = _extractParams(matchedEntry.key, path);
 
-      Request parsableRequest = Request(httpRequest, params: params);
+      // Create a new request with the manually parsed query parameters
+      var request = Request(httpRequest, params: params);
       Response response = Response(httpRequest.response);
 
-      parsableRequest.parseBody().then((_) {
-        handler(parsableRequest, response);
-      }).catchError((e) {
-        ResponseUtils.sendError(response, "Internal Server Error");
-      });
+      // Execute middleware chain
+      if (_middlewares.isNotEmpty) {
+        var iterator = _middlewares.iterator;
+        _executeMiddlewares(httpRequest, iterator, () {
+          _handleRequest(request, response, handler);
+        });
+      } else {
+        _handleRequest(request, response, handler);
+      }
     } else {
       Response response = Response(httpRequest.response);
-      ResponseUtils.sendError(response, "Internal Server Error");
+      ResponseUtils.sendError(response, "Not Found", statusCode: HttpStatus.notFound);
+    }
+  }
+
+  /// Handles the request after middleware execution.
+  ///
+  /// [request] The parsed request object
+  /// [response] The response object
+  /// [handler] The route handler function
+  void _handleRequest(Request request, Response response, Function handler) {
+    // For POST, PUT, and DELETE requests, parse the body
+    if (['POST', 'PUT', 'DELETE'].contains(request.method)) {
+      request.parseBody().then((_) {
+        handler(request, response);
+      }).catchError((e) {
+        ResponseUtils.sendError(response, "Bad Request", statusCode: HttpStatus.badRequest);
+      });
+    } else {
+      // For GET and other methods, execute handler directly
+      handler(request, response);
     }
   }
 
@@ -87,11 +127,17 @@ class Router {
   /// [path] The path pattern to convert
   /// Returns a [RegExp] that can match the path pattern
   RegExp _pathToRegExp(String path) {
-    String escapedPath = RegExp.escape(path).replaceAllMapped(
-      RegExp(r'\\:([a-zA-Z0-9_]+)'),
-      (match) => '(?<' + match[1] + '>[^/]+)'
+    // First, escape all special regex characters
+    String escapedPath = RegExp.escape(path);
+    
+    // Then, replace the parameter placeholders with named capture groups
+    String regexPattern = escapedPath.replaceAllMapped(
+      RegExp(r':([a-zA-Z0-9_]+)'),
+      (match) => '(?<${match[1]}>[^/]+)'
     );
-    return RegExp('^' + escapedPath + r'$');
+    
+    // Add start and end anchors
+    return RegExp('^$regexPattern\$');
   }
 
   /// Extracts parameters from a path using a regular expression.
@@ -101,9 +147,14 @@ class Router {
   /// Returns a [Map] of parameter names to their values
   Map<String, String> _extractParams(RegExp regExp, String path) {
     var match = regExp.firstMatch(path);
-    return match != null
-      ? Map.fromEntries(match.groupNames.map((name) => MapEntry(name, match.namedGroup(name))))
-      : {};
+    if (match == null) return {};
+    
+    return Map.fromEntries(
+      match.groupNames.map((name) {
+        var value = match.namedGroup(name);
+        return MapEntry(name, value ?? '');
+      })
+    );
   }
 
   /// Executes middleware functions in sequence.
