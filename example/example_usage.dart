@@ -35,8 +35,8 @@ void main() async {
   // GET /users - List users with pagination
   server.get('/users', (Request req, Response res) {
     // Get pagination parameters from query
-    var page = req.query['page'];
-    var limit = req.query['limit'];
+    var page = req.getQuery('page');
+    var limit = req.getQuery('limit');
     
     // Return paginated response
     res.json({
