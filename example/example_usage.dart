@@ -3,9 +3,9 @@ import 'package:wailuku/wailuku.dart';
 void main() async {
   var server = WailukuServer();
   
-  server.get('/', (Request req, Response res) {
+  server.get('/<userid>', (Request req, Response res) {
     res
-      ..send('Hello from GET!')
+      ..send(req.queryParameters["userid"]!)
       ..close();
   });
 
