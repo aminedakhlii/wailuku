@@ -49,7 +49,7 @@ void main() async {
   });
 
   // PUT /users/:id/comment/:id - Update a user
-  server.put('/users/:id', (Request req, Response res) {
+  server.put('/users/:id/comment/:commentId', (Request req, Response res) {
     // Get user ID from route parameters
     var userId = req.getParam('id');
     var commentId = req.getParam('commentId');

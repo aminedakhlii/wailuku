@@ -3,6 +3,14 @@ import 'package:wailuku/src/http/request.dart';
 import 'package:wailuku/src/http/response.dart';
 import 'package:wailuku/wailuku.dart';
 
+/// Class to hold the result of route pattern parsing
+class RoutePattern {
+  final RegExp regex;
+  final List<String> paramNames;
+
+  RoutePattern(this.regex, this.paramNames);
+}
+
 /// A class that handles routing of HTTP requests to their corresponding handlers.
 ///
 /// The Router class is responsible for:
@@ -32,6 +40,9 @@ class Router {
   /// ```
   final Map<String, Map<String, Function(Request, Response)>> _routes = {};
 
+  /// Map of route patterns for parameterized routes
+  final Map<String, RoutePattern> _routePatterns = {};
+
   /// Adds a global middleware function
   void use(Function(Request, Response, Function) middleware) {
     _middleware.add(middleware);
@@ -40,6 +51,25 @@ class Router {
   /// Adds a path-specific middleware function
   void usePath(String path, Function(Request, Response, Function) middleware) {
     _pathMiddlewares.putIfAbsent(path, () => []).add(middleware);
+  }
+
+  /// Converts a route pattern to a regular expression and extracts parameter names
+  RoutePattern _parseRoutePattern(String pattern) {
+    final segments = pattern.split('/');
+    final paramNames = <String>[];
+    final regexParts = <String>[];
+
+    for (var segment in segments) {
+      if (segment.startsWith(':')) {
+        paramNames.add(segment.substring(1));
+        regexParts.add('([^/]+)');
+      } else {
+        regexParts.add(RegExp.escape(segment));
+      }
+    }
+
+    final regex = RegExp('^${regexParts.join('/')}\$');
+    return RoutePattern(regex, paramNames);
   }
 
   /// Registers a new route with the specified HTTP method, path, and handler.
@@ -54,8 +84,12 @@ class Router {
     dynamic middleware, 
     Function(Request, Response) handler
   ) {
+    // Parse route pattern and extract parameters
+    final routePattern = _parseRoutePattern(path);
+    
     _routes[path] ??= {};
     _routes[path]![method] = handler;
+    _routePatterns[path] = routePattern;
 
     // Handle middleware
     if (middleware != null) {
@@ -90,25 +124,55 @@ class Router {
     // Find matching route
     final path = httpRequest.uri.path;
     final method = httpRequest.method;
-    final handler = _routes[path]?[method];
-
-    if (handler != null) {
-      // Get all middleware that should be executed
-      List<Function(Request, Response, Function)> allMiddleware = [];
+    
+    // Find matching route pattern
+    String? matchedRoute;
+    Map<String, String>? params;
+    
+    for (final routePath in _routes.keys) {
+      final routePattern = _routePatterns[routePath]!;
+      final match = routePattern.regex.firstMatch(path);
       
-      // Add path-specific middleware if any
-      if (_pathMiddlewares.containsKey(path)) {
-        allMiddleware.addAll(_pathMiddlewares[path]!);
+      if (match != null) {
+        matchedRoute = routePath;
+        params = {};
+        
+        // Extract parameter values
+        for (var i = 0; i < routePattern.paramNames.length; i++) {
+          params[routePattern.paramNames[i]] = match.group(i + 1)!;
+        }
+        
+        break;
       }
+    }
 
-      // Execute middleware chain
-      if (allMiddleware.isNotEmpty) {
-        var iterator = allMiddleware.iterator;
-        await _executeMiddlewares(request, response, iterator, () async {
-          await _handleRequest(request, response, handler);
-        });
+    if (matchedRoute != null) {
+      final handler = _routes[matchedRoute]?[method];
+      
+      if (handler != null) {
+        // Create request with parameters
+        final requestWithParams = Request(httpRequest, params: params);
+        
+        // Get all middleware that should be executed
+        List<Function(Request, Response, Function)> allMiddleware = [];
+        
+        // Add path-specific middleware if any
+        if (_pathMiddlewares.containsKey(matchedRoute)) {
+          allMiddleware.addAll(_pathMiddlewares[matchedRoute]!);
+        }
+
+        // Execute middleware chain
+        if (allMiddleware.isNotEmpty) {
+          var iterator = allMiddleware.iterator;
+          await _executeMiddlewares(requestWithParams, response, iterator, () async {
+            await _handleRequest(requestWithParams, response, handler);
+          });
+        } else {
+          await _handleRequest(requestWithParams, response, handler);
+        }
       } else {
-        await _handleRequest(request, response, handler);
+        response.statusCode = HttpStatus.methodNotAllowed;
+        response.send('Method Not Allowed');
       }
     } else {
       response.statusCode = HttpStatus.notFound;
