@@ -60,6 +60,43 @@ void main() async {
     res.send('Search query: $query');
   });
 
+  //Middleware examples 
+
+  // simple middleware functions
+  void simpleMiddleware(Request req, Response res, Function next) {
+    print('simple middleware');
+    next();
+  }
+
+  void simpleMiddleware2(Request req, Response res, Function next) {
+    print('simple middleware 2');
+    next();
+  }
+
+  // Single middleware
+  server.get("/single-middleware", simpleMiddleware, (req, res) => res.send("Hello"));
+
+  // Multiple middlewares
+  server.get("/multiple-middlewares", [
+    simpleMiddleware,
+    simpleMiddleware2
+  ], (req, res) => res.send("Hello"));
+
+  // No middleware
+  server.get("/no-middleware", (req, res) => res.send("Hello"));
+
+  // Register a Global middleware
+  server.use((req, res, next) { 
+    print('Global middleware');
+    next();
+  });
+
+  // Register a Route-specific middleware
+  server.usePath("/users", (req, res, next) {
+    print('Route-specific middleware');
+    next();
+  });
+
   await server.listen('localhost', 8080);
 }
 ```

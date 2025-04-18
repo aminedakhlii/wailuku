@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'router.dart';
+import '../http/request.dart';
+import '../http/response.dart';
 
 /// A server class that provides a simple interface for creating HTTP servers.
 ///
@@ -18,64 +20,82 @@ class WailukuServer {
   /// Creates a new WailukuServer instance.
   WailukuServer();
 
-  /// Registers a handler for GET requests at the specified path.
-  ///
-  /// [path] The URL path pattern to match (e.g., '/users/:id')
-  /// [handler] The function to handle matching requests
-  ///
-  /// Example:
-  /// ```dart
-  /// server.get('/users/:id', (req, res) {
-  ///   res.send('User ${req.params['id']}');
-  /// });
-  /// ```
-  void get(String path, Function handler) {
-    _router.register('GET', path, handler);
+  /// Adds a global middleware function
+  void use(Function(Request, Response, Function) middleware) {
+    _router.use(middleware);
   }
 
-  /// Registers a handler for POST requests at the specified path.
-  ///
-  /// [path] The URL path pattern to match
-  /// [handler] The function to handle matching requests
-  ///
-  /// Example:
-  /// ```dart
-  /// server.post('/users', (req, res) {
-  ///   // Handle user creation
-  /// });
-  /// ```
-  void post(String path, Function handler) {
-    _router.register('POST', path, handler);
+  /// Adds a path-specific middleware function
+  void usePath(String path, Function(Request, Response, Function) middleware) {
+    _router.usePath(path, middleware);
   }
 
-  /// Registers a handler for PUT requests at the specified path.
-  ///
-  /// [path] The URL path pattern to match
-  /// [handler] The function to handle matching requests
-  ///
-  /// Example:
-  /// ```dart
-  /// server.put('/users/:id', (req, res) {
-  ///   // Handle user update
-  /// });
-  /// ```
-  void put(String path, Function handler) {
-    _router.register('PUT', path, handler);
+  /// Registers a GET route with optional middleware
+  void get(
+    String path, 
+    [dynamic middleware, 
+    Function(Request, Response)? handler]
+  ) {
+    if (handler == null) {
+      if (middleware is Function(Request, Response)) {
+        handler = middleware;
+        middleware = null;
+      } else {
+        throw ArgumentError('Handler must be provided');
+      }
+    }
+    _router.register('GET', path, middleware, handler);
   }
 
-  /// Registers a handler for DELETE requests at the specified path.
-  ///
-  /// [path] The URL path pattern to match
-  /// [handler] The function to handle matching requests
-  ///
-  /// Example:
-  /// ```dart
-  /// server.delete('/users/:id', (req, res) {
-  ///   // Handle user deletion
-  /// });
-  /// ```
-  void delete(String path, Function handler) {
-    _router.register('DELETE', path, handler);
+  /// Registers a POST route with optional middleware
+  void post(
+    String path, 
+    [dynamic middleware, 
+    Function(Request, Response)? handler]
+  ) {
+    if (handler == null) {
+      if (middleware is Function(Request, Response)) {
+        handler = middleware;
+        middleware = null;
+      } else {
+        throw ArgumentError('Handler must be provided');
+      }
+    }
+    _router.register('POST', path, middleware, handler);
+  }
+
+  /// Registers a PUT route with optional middleware
+  void put(
+    String path, 
+    [dynamic middleware, 
+    Function(Request, Response)? handler]
+  ) {
+    if (handler == null) {
+      if (middleware is Function(Request, Response)) {
+        handler = middleware;
+        middleware = null;
+      } else {
+        throw ArgumentError('Handler must be provided');
+      }
+    }
+    _router.register('PUT', path, middleware, handler);
+  }
+
+  /// Registers a DELETE route with optional middleware
+  void delete(
+    String path, 
+    [dynamic middleware, 
+    Function(Request, Response)? handler]
+  ) {
+    if (handler == null) {
+      if (middleware is Function(Request, Response)) {
+        handler = middleware;
+        middleware = null;
+      } else {
+        throw ArgumentError('Handler must be provided');
+      }
+    }
+    _router.register('DELETE', path, middleware, handler);
   }
 
   /// Starts the HTTP server and begins listening for requests.

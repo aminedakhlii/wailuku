@@ -10,7 +10,7 @@ void main() async {
   });
 
   // Root route - POST
-  server.post('/', (Request req, Response res) {
+  server.post('/', (){}, (Request req, Response res) {
     // Access the parsed request body
     var name = req.body['name'];
     var age = req.body['age'];
@@ -48,10 +48,11 @@ void main() async {
     });
   });
 
-  // PUT /users/:id - Update a user
+  // PUT /users/:id/comment/:id - Update a user
   server.put('/users/:id', (Request req, Response res) {
     // Get user ID from route parameters
     var userId = req.getParam('id');
+    var commentId = req.getParam('commentId');
     
     // Get update data from request body
     var name = req.body['name'];
@@ -63,6 +64,7 @@ void main() async {
       res.json({
         'message': 'User updated successfully',
         'userId': userId,
+        'commentId': commentId,
         'data': {
           'name': name,
           'age': age
@@ -86,6 +88,43 @@ void main() async {
       'message': 'User deleted successfully',
       'userId': userId
     });
+  });
+
+  //Middleware examples 
+
+  // simple middleware functions
+  void simpleMiddleware(Request req, Response res, Function next) {
+    print('simple middleware');
+    next();
+  }
+
+  void simpleMiddleware2(Request req, Response res, Function next) {
+    print('simple middleware 2');
+    next();
+  }
+
+  // Single middleware
+  server.get("/single-middleware", simpleMiddleware, (req, res) => res.send("Hello"));
+
+  // Multiple middlewares
+  server.get("/multiple-middlewares", [
+    simpleMiddleware,
+    simpleMiddleware2
+  ], (req, res) => res.send("Hello"));
+
+  // No middleware
+  server.get("/no-middleware", (req, res) => res.send("Hello"));
+
+  // Register a Global middleware
+  server.use((req, res, next) { 
+    print('Global middleware');
+    next();
+  });
+
+  // Register a Route-specific middleware
+  server.usePath("/users", (req, res, next) {
+    print('Route-specific middleware');
+    next();
   });
 
   // Start the server

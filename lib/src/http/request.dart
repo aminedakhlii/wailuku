@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:http_parser/http_parser.dart';
 
 /// A class that wraps an HTTP request and provides convenient access to its data.
 ///
@@ -31,6 +29,15 @@ class Request {
 
   /// The HTTP method of the request (GET, POST, PUT, DELETE, etc.)
   String get method => _request.method;
+
+  /// Get all headers from the request
+  Map<String, String> get headers {
+    final Map<String, String> result = {};
+    _request.headers.forEach((name, values) {
+      result[name] = values.join(',');
+    });
+    return result;
+  }
 
   /// Creates a new Request instance from an HttpRequest.
   ///

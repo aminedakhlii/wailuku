@@ -11,11 +11,21 @@ import 'dart:io';
 class Response {
   /// The underlying HTTP response object.
   final HttpResponse _response;
+  int _statusCode;
 
   /// Creates a new Response instance from an HttpResponse.
   ///
   /// [response] The underlying HTTP response
-  Response(this._response);
+  Response(this._response) : _statusCode = 200;
+
+  /// Get the current status code
+  int get statusCode => _statusCode;
+
+  /// Set the status code
+  set statusCode(int code) {
+    _statusCode = code;
+    _response.statusCode = code;
+  }
 
   /// Sets the HTTP status code for the response.
   ///

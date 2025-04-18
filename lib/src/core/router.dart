@@ -8,170 +8,143 @@ import 'package:wailuku/wailuku.dart';
 /// The Router class is responsible for:
 /// - Registering routes with their handlers
 /// - Matching incoming requests to registered routes
-/// - Extracting parameters from route paths
 /// - Managing middleware execution
 class Router {
-  /// List of middleware functions that will be executed for each request.
-  final List<Function> _middlewares = [];
+  /// List of global middleware functions
+  final List<Function(Request, Response, Function)> _middleware = [];
 
-  /// Map of routes organized by HTTP method.
+  /// Map of path-specific middleware functions
+  final Map<String, List<Function(Request, Response, Function)>> _pathMiddlewares = {};
+
+  /// Map of routes organized by HTTP method and path.
   ///
   /// The structure is:
   /// ```dart
   /// {
-  ///   'GET': { RegExp: Function },
-  ///   'POST': { RegExp: Function },
-  ///   ...
+  ///   '/path1': {
+  ///     'GET': Function(Request, Response),
+  ///     'POST': Function(Request, Response),
+  ///   },
+  ///   '/path2': {
+  ///     'GET': Function(Request, Response),
+  ///   }
   /// }
   /// ```
-  final Map<String, Map<RegExp, Function>> _routes = {};
+  final Map<String, Map<String, Function(Request, Response)>> _routes = {};
 
-  /// Registers a new route with the specified HTTP method, path pattern, and handler.
+  /// Adds a global middleware function
+  void use(Function(Request, Response, Function) middleware) {
+    _middleware.add(middleware);
+  }
+
+  /// Adds a path-specific middleware function
+  void usePath(String path, Function(Request, Response, Function) middleware) {
+    _pathMiddlewares.putIfAbsent(path, () => []).add(middleware);
+  }
+
+  /// Registers a new route with the specified HTTP method, path, and handler.
   ///
   /// [method] The HTTP method (e.g., 'GET', 'POST', etc.)
-  /// [path] The path pattern that may include parameters (e.g., '/users/:id')
-  /// [handler] The function that will handle requests matching this route
-  ///
-  /// Example:
-  /// ```dart
-  /// router.register('GET', '/users/:id', (req, res) {
-  ///   res.send('User ${req.params['id']}');
-  /// });
-  /// ```
-  void register(String method, String path, Function handler) {
-    var pathRegex = _pathToRegExp(path);
-    _routes.putIfAbsent(method, () => {})[pathRegex] = handler;
+  /// [path] The path pattern (e.g., '/users')
+  /// [middleware] Optional middleware or list of middleware functions
+  /// [handler] The handler function that will be executed for this route
+  void register(
+    String method, 
+    String path, 
+    dynamic middleware, 
+    Function(Request, Response) handler
+  ) {
+    _routes[path] ??= {};
+    _routes[path]![method] = handler;
+
+    // Handle middleware
+    if (middleware != null) {
+      if (middleware is List) {
+        // Convert List<dynamic> to List<Function(Request, Response, Function)>
+        _pathMiddlewares[path] = middleware.whereType<Function(Request, Response, Function)>().toList();
+      } else if (middleware is Function(Request, Response, Function)) {
+        // Single middleware function
+        _pathMiddlewares[path] = [middleware];
+      }
+    }
   }
 
   /// Routes an incoming HTTP request to the appropriate handler.
   ///
   /// This method:
   /// 1. Matches the request to a registered route
-  /// 2. Extracts parameters from the path
-  /// 3. Creates Request and Response objects
-  /// 4. Parses the request body
-  /// 5. Executes the handler
+  /// 2. Creates Request and Response objects
+  /// 3. Executes middleware
+  /// 4. Executes the handler
   ///
   /// [httpRequest] The incoming HTTP request to route
-  void route(HttpRequest httpRequest) {
-    // Parse the query string manually if needed
-    var queryParams = <String, String>{};
-    if (httpRequest.uri.query.isNotEmpty) {
-      queryParams = Uri.splitQueryString(httpRequest.uri.query);
+  Future<void> route(HttpRequest httpRequest) async {
+    final response = Response(httpRequest.response);
+    final request = Request(httpRequest);
+
+    // Execute global middleware
+    for (final middleware in _middleware) {
+      await middleware(request, response, () {});
     }
 
-    var methodRoutes = _routes[httpRequest.method];
-    if (methodRoutes == null) {
-      Response response = Response(httpRequest.response);
-      ResponseUtils.sendError(response, "Method Not Allowed", statusCode: HttpStatus.methodNotAllowed);
-      return;
-    }
+    // Find matching route
+    final path = httpRequest.uri.path;
+    final method = httpRequest.method;
+    final handler = _routes[path]?[method];
 
-    // Get the path without query parameters
-    var path = httpRequest.uri.path;
-    if (path.isEmpty) path = '/';
-
-    var matchedEntry = methodRoutes.entries.firstWhere(
-      (entry) => entry.key.hasMatch(path),
-      orElse: () => MapEntry(RegExp(''), (_, __) {})
-    );
-
-    if (matchedEntry.key.pattern.isNotEmpty) {
-      var handler = matchedEntry.value;
-      var params = _extractParams(matchedEntry.key, path);
-
-      // Create a new request with the manually parsed query parameters
-      var request = Request(httpRequest, params: params);
-      Response response = Response(httpRequest.response);
+    if (handler != null) {
+      // Get all middleware that should be executed
+      List<Function(Request, Response, Function)> allMiddleware = [];
+      
+      // Add path-specific middleware if any
+      if (_pathMiddlewares.containsKey(path)) {
+        allMiddleware.addAll(_pathMiddlewares[path]!);
+      }
 
       // Execute middleware chain
-      if (_middlewares.isNotEmpty) {
-        var iterator = _middlewares.iterator;
-        _executeMiddlewares(httpRequest, iterator, () {
-          _handleRequest(request, response, handler);
+      if (allMiddleware.isNotEmpty) {
+        var iterator = allMiddleware.iterator;
+        await _executeMiddlewares(request, response, iterator, () async {
+          await _handleRequest(request, response, handler);
         });
       } else {
-        _handleRequest(request, response, handler);
+        await _handleRequest(request, response, handler);
       }
     } else {
-      Response response = Response(httpRequest.response);
-      ResponseUtils.sendError(response, "Not Found", statusCode: HttpStatus.notFound);
+      response.statusCode = HttpStatus.notFound;
+      response.send('Not Found');
     }
   }
 
   /// Handles the request after middleware execution.
-  ///
-  /// [request] The parsed request object
-  /// [response] The response object
-  /// [handler] The route handler function
-  void _handleRequest(Request request, Response response, Function handler) {
+  Future<void> _handleRequest(Request request, Response response, Function(Request, Response) handler) async {
     // For POST, PUT, and DELETE requests, parse the body
     if (['POST', 'PUT', 'DELETE'].contains(request.method)) {
-      request.parseBody().then((_) {
-        handler(request, response);
-      }).catchError((e) {
-        ResponseUtils.sendError(response, "Bad Request", statusCode: HttpStatus.badRequest);
-      });
+      try {
+        await request.parseBody();
+        await handler(request, response);
+      } catch (e) {
+        response.statusCode = HttpStatus.badRequest;
+        response.send('Bad Request');
+      }
     } else {
-      // For GET and other methods, execute handler directly
-      handler(request, response);
+      await handler(request, response);
     }
   }
 
-  /// Converts a path pattern into a regular expression.
-  ///
-  /// This method:
-  /// 1. Escapes special characters in the path
-  /// 2. Converts parameter placeholders (e.g., ':id') into named capture groups
-  ///
-  /// [path] The path pattern to convert
-  /// Returns a [RegExp] that can match the path pattern
-  RegExp _pathToRegExp(String path) {
-    // First, escape all special regex characters
-    String escapedPath = RegExp.escape(path);
-    
-    // Then, replace the parameter placeholders with named capture groups
-    String regexPattern = escapedPath.replaceAllMapped(
-      RegExp(r':([a-zA-Z0-9_]+)'),
-      (match) => '(?<${match[1]}>[^/]+)'
-    );
-    
-    // Add start and end anchors
-    return RegExp('^$regexPattern\$');
-  }
-
-  /// Extracts parameters from a path using a regular expression.
-  ///
-  /// [regExp] The regular expression used to match the path
-  /// [path] The actual path to extract parameters from
-  /// Returns a [Map] of parameter names to their values
-  Map<String, String> _extractParams(RegExp regExp, String path) {
-    var match = regExp.firstMatch(path);
-    if (match == null) return {};
-    
-    return Map.fromEntries(
-      match.groupNames.map((name) {
-        var value = match.namedGroup(name);
-        return MapEntry(name, value ?? '');
-      })
-    );
-  }
-
   /// Executes middleware functions in sequence.
-  ///
-  /// This method:
-  /// 1. Executes the current middleware
-  /// 2. Calls the next middleware in sequence
-  /// 3. Finally calls the provided [next] function
-  ///
-  /// [request] The HTTP request being processed
-  /// [iterator] Iterator over the middleware functions
-  /// [next] Function to call after all middleware has executed
-  void _executeMiddlewares(HttpRequest request, Iterator<Function> iterator, Function next) {
+  Future<void> _executeMiddlewares(
+    Request request,
+    Response response,
+    Iterator<Function(Request, Response, Function)> iterator,
+    Function next
+  ) async {
     if (iterator.moveNext()) {
-      iterator.current(request, () => _executeMiddlewares(request, iterator, next));
+      await iterator.current(request, response, () async {
+        await _executeMiddlewares(request, response, iterator, next);
+      });
     } else {
-      next();
+      await next();
     }
   }
 }
