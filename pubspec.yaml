@@ -13,4 +13,4 @@ dev_dependencies:
   test: ^1.16.0 
 
 executables:
-  wailuku: bin/main.dart
+  wailuku: lib/wailuku.dart
