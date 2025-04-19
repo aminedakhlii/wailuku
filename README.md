@@ -132,7 +132,7 @@ Path patterns can include parameters:
 
 ## Example
 
-Check out the [example](example/example_usage.dart) for a complete CRUD API implementation.
+Check out the [example](example/main.dart) for a complete CRUD API implementation.
 
 ## Contributing
 
