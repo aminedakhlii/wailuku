@@ -139,4 +139,4 @@ We welcome contributions! Please see our 'CONTRIBUTING.md' guide for details.
 
 ## License
 
-Wailuku is licensed under the MIT License. 
+Wailuku is licensed under the BSD-3-Clause license License. 
