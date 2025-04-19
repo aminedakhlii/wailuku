@@ -5,16 +5,17 @@ title: Wailuku - A Lightweight Dart Web Framework
 
 # Wailuku
 
-A lightweight, flexible, and easy-to-use web framework for Dart.
+A lightweight, flexible, and easy-to-use web framework for Dart inspired by Express.js.
 
 ## Features
 
-- Simple and intuitive API
+- Simple and intuitive API similar to Express.js
+- Built-in routing system with parameter support
+- Request body parsing for JSON and form data
+- Query parameter handling
+- Route parameter extraction
 - Middleware support
-- Route parameters
-- Request body parsing
-- Response utilities
-- Built-in error handling
+- Clean and maintainable codebase
 
 ## Getting Started
 
@@ -24,7 +25,8 @@ Add Wailuku to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wailuku: ^1.0.0
+  wailuku:
+    git: https://github.com/aminedakhlii/wailuku.git
 ```
 
 ### Basic Usage
@@ -79,8 +81,8 @@ app.get('/users/:id', (req, res) {
 Parse request bodies for POST, PUT, and DELETE requests:
 
 ```dart
-app.post('/users', (req, res) async {
-  final body = await req.body;
+app.post('/users', (req, res) {
+  final body = req.body;
   // Handle the request body
 });
 ```
@@ -91,11 +93,11 @@ Use the built-in response utilities:
 
 ```dart
 app.get('/api/data', (req, res) {
-  ResponseUtils.sendOk(res, 'Data retrieved successfully');
+  res.status(200).send('Data retrieved successfully');
 });
 
 app.get('/api/error', (req, res) {
-  ResponseUtils.sendError(res, 'Something went wrong', statusCode: 500);
+  res.status(500).json({'Message': 'Something went wrong', statusCode: 500});
 });
 ```
 
@@ -105,16 +107,21 @@ app.get('/api/error', (req, res) {
 
 - `use(middleware)`: Add global middleware
 - `usePath(path, middleware)`: Add path-specific middleware
-- `get(path, [middleware, handler])`: Register GET route
-- `post(path, [middleware, handler])`: Register POST route
-- `put(path, [middleware, handler])`: Register PUT route
-- `delete(path, [middleware, handler])`: Register DELETE route
+- `get(path, middleware, handler)`: Register GET route
+- `post(path, middleware, handler)`: Register POST route
+- `put(path, middleware, handler)`: Register PUT route
+- `delete(path, middleware, handler)`: Register DELETE route
+- `get(path, [middleware1, middleware2], handler)`: Register GET route with multiple middlewares
+- `post(path, [middleware1, middleware2], handler)`: Register POST route with multiple middlewares
+- `put(path, [middleware1, middleware2], handler)`: Register PUT route with multiple middlewares
+- `delete(path, [middleware1, middleware2], handler)`: Register DELETE route with multiple middlewares
+
 - `listen(address, port)`: Start the server
 
 ### Request
 
 - `method`: HTTP method
-- `path`: Request path
+- `query`: Request query
 - `params`: Route parameters
 - `body`: Request body (async)
 - `headers`: Request headers
@@ -123,6 +130,7 @@ app.get('/api/error', (req, res) {
 
 - `status(code)`: Set status code
 - `send(data)`: Send response data
+- `json(data)`: Send response data in json format
 - `close()`: Close the response
 
 ## Contributing
