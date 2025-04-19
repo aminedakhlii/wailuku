@@ -20,8 +20,7 @@ Add Wailuku to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wailuku: 
-    git: https://github.com/aminedakhlii/wailuku.git
+  wailuku: ^0.1.0
 ```
 
 ### Basic Usage
