@@ -123,7 +123,7 @@ app.get('/api/error', (req, res) {
 - `method`: HTTP method
 - `query`: Request query
 - `params`: Route parameters
-- `body`: Request body (async)
+- `body`: Request body
 - `headers`: Request headers
 
 ### Response
