@@ -20,7 +20,7 @@ Add Wailuku to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wailuku: ^0.1.0
+  wailuku: ^0.2.0
 ```
 
 ### Basic Usage
