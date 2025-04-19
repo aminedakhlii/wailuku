@@ -2,6 +2,7 @@ name: wailuku
 version: 0.1.0
 description: A minimalist Dart backend framework inspired by Express.js.
 homepage: https://github.com/aminedakhlii/wailuku
+repository: https://github.com/aminedakhlii/wailuku
 
 environment:
   sdk: '>=2.12.0 <3.7.0' # Adjust the version based on your compatibility requirements
