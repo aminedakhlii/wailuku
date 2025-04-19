@@ -103,8 +103,18 @@ void main() async {
     next();
   }
 
+  // a middleware that parses the body of the request
+  void simpleMiddleware3(Request req, Response res, Function next) {
+    print(req.body);
+    print('simple middleware 2');
+    next();
+  }
+
   // Single middleware
   server.get("/single-middleware", simpleMiddleware, (req, res) => res.send("Hello"));
+
+  // an application of a middleware that parses the body of the request
+  server.post("/single-middleware", simpleMiddleware3, (req, res) => res.send("Hello"));
 
   // Multiple middlewares
   server.get("/multiple-middlewares", [

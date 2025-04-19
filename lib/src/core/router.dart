@@ -185,7 +185,11 @@ class Router {
     // For POST, PUT, and DELETE requests, parse the body
     if (['POST', 'PUT', 'DELETE'].contains(request.method)) {
       try {
-        await request.parseBody();
+        try {
+          await request.parseBody();
+        } catch (e) {
+          
+        }
         await handler(request, response);
       } catch (e) {
         response.statusCode = HttpStatus.badRequest;
@@ -203,6 +207,11 @@ class Router {
     Iterator<Function(Request, Response, Function)> iterator,
     Function next
   ) async {
+    try {
+      await request.parseBody();
+    } catch (e) {
+      
+    }
     if (iterator.moveNext()) {
       await iterator.current(request, response, () async {
         await _executeMiddlewares(request, response, iterator, next);
