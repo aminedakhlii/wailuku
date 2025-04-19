@@ -9,9 +9,6 @@ export 'src/core/router.dart';
 export 'src/http/request.dart';
 export 'src/http/response.dart';
 
-// Export middleware functionalities.
-export 'src/middleware/logger.dart';
-
 // Export utilities.
 export 'src/utils/response_utils.dart';
 
