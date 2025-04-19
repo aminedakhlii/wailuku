@@ -135,7 +135,7 @@ app.get('/api/error', (req, res) {
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our 'CONTRIBUTING.md' guide for details.
 
 ## License
 
