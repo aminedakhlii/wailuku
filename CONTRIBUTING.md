@@ -35,7 +35,7 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/wailuku.git
+   git clone https://github.com/aminedakhlii/wailuku.git
    cd wailuku
    ```
 
