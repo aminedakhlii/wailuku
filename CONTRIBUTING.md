@@ -44,9 +44,9 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
    dart pub get
    ```
 
-3. Run tests:
+3. Run example:
    ```bash
-   dart test
+   dart example/main.dart
    ```
 
 ### Code Style
