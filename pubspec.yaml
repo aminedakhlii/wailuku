@@ -16,9 +16,3 @@ dev_dependencies:
   # watcher: ^1.1.0
   dartdoc: ^8.0.7
 
-# Add platform support
-platforms:
-  vm: '>=3.0.0'
-  native: '>=3.0.0'
-  js: '>=3.0.0'
-
