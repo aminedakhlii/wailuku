@@ -1,4 +1,19 @@
-// wailuku.dart
+/// A minimalist Dart backend framework inspired by Express.js.
+///
+/// This library provides a simple and intuitive way to create HTTP servers
+/// and handle routing in Dart applications. It follows a similar pattern to
+/// Express.js while maintaining Dart's idiomatic style.
+///
+/// Example:
+/// ```dart
+/// import 'package:wailuku/wailuku.dart';
+///
+/// void main() {
+///   final app = Server();
+///   app.get('/', (req, res) => res.send('Hello World!'));
+///   app.listen(3000);
+/// }
+/// ```
 library wailuku;
 
 // Export core functionalities.

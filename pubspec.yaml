@@ -5,10 +5,20 @@ homepage: https://github.com/aminedakhlii/wailuku
 repository: https://github.com/aminedakhlii/wailuku
 
 environment:
-  sdk: '>=2.12.0 <3.7.0' # Adjust the version based on your compatibility requirements
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  mime: ^1.0.4
 
 dev_dependencies:
-  test: ^1.16.0 
+  test: ^1.24.0
+  lints: ^3.0.0
+  watcher: ^1.1.0
+  dartdoc: ^6.5.0
+
+# Add platform support
+platforms:
+  vm: '>=3.0.0'
+  native: '>=3.0.0'
+  js: '>=3.0.0'
 
